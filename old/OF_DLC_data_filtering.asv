@@ -1,0 +1,60 @@
+% Open Field Assay - DLC Data Analysis 
+% Sjulson Lab - Albert Einstein College of Medicine
+% Kelly Clemenza - kelly.clemenza@einseteinmed.org
+
+% Define data source
+procedure = 'Open_Field_Assay';
+cohort_name = 'LAMUOR-COHORT101';
+
+if isunix
+    base_dir = fullfile('/home/kelly/Documents/LAMUOR_PROJECT-DATA', procedure, cohort_name, '/');
+elseif ismac
+    base_dir = fullfile('/Users/basil/My Drive/lab-shared/lab_projects/LAMuOR-Gi/4_Animal_Behavior/', procedure, cohort_name, 'DLC_Results/');
+
+% Load experiment information 
+load(strcat(base_dir, 'cohort_info.mat'));
+
+% Iterate through each subject
+for i = 1:length(cohort_info.ID);
+    subject_ID = cohort_info.ID(i);
+    subject_dir = fullfile(base_dir, subject_ID);
+       
+    % Iterate over data files for each experiment
+    for x = 1:length(experiment_info.timepoints);
+        experiment_dir = fullfile(subject_dir, strcat(cohort_info.subject_ID(i), '_OF_', cohort_info.experimental_timepoint(x)))
+        experiment_data = readtable(string(fullfile(experiment_dir, strcat(subject_ID, '_OF_', experiment_info.timepoints(x), 'DLC_resnet50_LAMuOR_OF_v2Jan19shuffle1_500000_filtered.csv'))));
+        select_xy = experiment_data{1:end,bodypart_coord};
+
+        function [timevec, green, red] = loadFP(subject_dir, which_chan, freq, LPfreq, downsamp_factor)
+
+        
+     
+        % Low pass filter
+        select_xy_filtered = lowpass(double(select_xy(1:end,2:3)), LPfreq, freq);
+ 
+        % Downsample
+        select_xy_length = length(select_xy);
+        select_xy_filtered_downsampled = interp1(1:select_xy_length, select_xy_filtered, linspace(1,select_xy_length,40000));
+       
+        % save mat files
+        save(strcat(experiment_dir,  '/', subject_ID, '_OF_', cohort_info.experimental_timepoint(x), '_select_xy.mat'), 'select_xy');
+        save(strcat(experiment_dir,  '/', subject_ID, '_OF_', cohort_info.experimental_timepoint(x), '_select_xy_filtered.mat'), 'select_xy_filtered');
+        save(strcat(experiment_dir,  '/', subject_ID, '_OF_', cohort_info.experimental_timepoint(x), '_select_xy_filtered_downsampled.mat'), 'select_xy_filtered_downsampled');
+
+f1 = figure
+        s1 = subplot(3,1,1); hold on;
+        plot(select_xy(:,2));
+        title('xy')
+
+        s2 = subplot(3,1,2); hold on;
+        plot(select_xy_filtered(:,1));
+        title('xy filtered');
+
+        s3 = subplot(3,1,3); hold on;
+        plot(select_xy_filtered_downsampled(:,1));
+        title('xy filtered downsampled');
+    end   
+        
+
+ 
+end
