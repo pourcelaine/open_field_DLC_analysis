@@ -1,21 +1,26 @@
 
-function [norm_trajectory] = read_DLC_output(subject_dir, subject_ID, timepoints, bodypart_to_track, freq, LPfreq)
+function [DLC_xy_filtered_downsampled] = read_DLC_output(subject_dir, subject_ID, timepoints, bodypart_to_track, LPfreq, downsample_number)
 
-DLC_dir = fullfile(subject_dir, strcat(subject_ID, '_OF_', timepoints))
-DLC_data = readtable(string(fullfile(DLC_dir, strcat(subject_ID, '_OF_', timepoints, 'DLC_resnet50_LAMuOR_OF_v2Jan19shuffle1_500000_filtered.csv'))))
+session_dir = fullfile(subject_dir, strcat(subject_ID, '_OF_', timepoints))
+session_DLC_data = readtable(fullfile(session_dir, dir(fullfile(session_dir, '*filtered.csv')).name))
+session_timestamps = readtable(fullfile(session_dir, dir(fullfile(session_dir, '*timestamp*.csv')).name))
 
-select_xy = DLC_data{1:end, bodypart_to_track};
+session_length = (session_timestamps{end, 3} - session_timestamps{1, 3})
+session_clocktime = ((session_timestamps{:,3} - session_timestamps{1,3})/60)
 
+freq = length(session_timestamps{:,3})/session_length
 
 % Low pass filter
-select_xy_filtered = lowpass(double(select_xy(1:end,2:3)), LPfreq, freq);
+DLC_xy_filtered(:,1) = session_clocktime(2:end,1)
+DLC_xy = session_DLC_data{1:end, bodypart_to_track(:,2:3)};
+DLC_xy_filtered(:,2:3) = lowpass(double(DLC_xy), LPfreq, freq);
+
+
 
 % Downsample
-select_xy_length = length(select_xy);
-select_xy_filtered_downsampled = interp1(1:select_xy_length, select_xy_filtered, linspace(1,select_xy_length,40000));
-norm_trajectory = select_xy_filtered_downsampled
+DLC_xy_filtered_downsampled = interp1(1:length(DLC_xy_filtered), DLC_xy_filtered, linspace(1, length(DLC_xy_filtered), downsample_number));
 
-% save mat files
-save(strcat(DLC_dir,  '/', subject_ID, '_OF_', timepoints, '_select_xy.mat'), 'select_xy');
-save(strcat(DLC_dir,  '/', subject_ID, '_OF_', timepoints, '_select_xy_filtered.mat'), 'select_xy_filtered');
-save(strcat(DLC_dir,  '/', subject_ID, '_OF_', timepoints, '_select_xy_filtered_downsampled.mat'), 'select_xy_filtered_downsampled');
+% % % save mat files
+save(strcat(session_dir,  '/', subject_ID, '_OF_', timepoints, '_DLC_xy.mat'), 'DLC_xy');
+save(strcat(session_dir,  '/', subject_ID, '_OF_', timepoints, '_DLC_xy_filtered.mat'), 'DLC_xy_filtered');
+save(strcat(session_dir,  '/', subject_ID, '_OF_', timepoints, '_DLC_xy_filtered_downsampled.mat'), 'DLC_xy_filtered_downsampled');
