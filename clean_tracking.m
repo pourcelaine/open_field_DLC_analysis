@@ -35,7 +35,7 @@ function new_pos_struct = clean_tracking(pos_struct, timevec)
 %% start of actual function
 
 % parameters
-global pos_struct s;
+global pos_struct s timevec;
 NaNthresh = 300; % about 10 seconds. Runs of NaNs longer than this won't be interpolated over
 
 %%
@@ -46,8 +46,7 @@ disp('and middle click (or shift-click) to close the polygon. Close the figure t
 disp('advance to the next one.');
 
 % calculating velocities
-
-length(pos_struct.xvel)
+pos_struct.xvel = [0; diff(pos_struct.xpos(:))];
 pos_struct.yvel = [0; diff(pos_struct.ypos(:))];
 
 
@@ -89,7 +88,6 @@ p0 = scatter(pos_struct.xpos, pos_struct.ypos, 'r.');
 
 % plot velocity
 s(3) = subplot(3, 3, [8 9]);
-pos_struct.timevec
 p2 = plot(pos_struct.timevec, pos_struct.yvel, 'r');
 
 % plot raw xpos vs time
